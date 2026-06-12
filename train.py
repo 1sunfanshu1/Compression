@@ -206,7 +206,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             if args.mercy_points and iteration % args.mercy_interval == 0 and iteration >= opt.densify_until_iter: #and iteration <= fine_tune_start:
                 with torch.no_grad():
-                    gaussians.reset_opacity()
+                 
                     gaussians._splatted_num_accum, _ = scene.calculate_redundancy_metric(pixel_scale=args.box_size)
                     gaussians._splatted_num_accum = gaussians._splatted_num_accum.unsqueeze(1)
                     gaussians.mercy_points(dens_statistic_dict,
