@@ -23,8 +23,8 @@ from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
 torch.cuda.empty_cache()
-max_gpu_mem = 0          # max_memory_reserved
-max_gpu_alloc = 0        # max_memory_allocated  👈 加这个
+max_gpu_mem = 0       
+max_gpu_alloc = 0     
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_FOUND = True
@@ -131,13 +131,13 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # ====================== 每轮更新显存峰值 ======================
         global max_gpu_mem
         global max_gpu_alloc
-        # 🔥 这是【真实、完整、全部】显存占用（和 nvidia-smi 一样）
+    
         current_mem = torch.cuda.max_memory_reserved() / 1024**3
-        current_alloc = torch.cuda.max_memory_allocated() / 1024**3  # 👈 加这个
+        current_alloc = torch.cuda.max_memory_allocated() / 1024**3  
         if current_mem > max_gpu_mem:
             max_gpu_mem = current_mem
         if current_alloc > max_gpu_alloc:
-            max_gpu_alloc = current_alloc  # 👈 加这个
+            max_gpu_alloc = current_alloc
 
         # 重置峰值统计，下一帧重新计算
         torch.cuda.reset_peak_memory_stats()
@@ -177,32 +177,32 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 gaussians.max_radii2D[visibility_filter] = torch.max(gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
                 gaussians.add_densification_stats(viewspace_point_tensor, visibility_filter)
 
-                if iteration % (opt.densification_interval // 2) == 0:
-                    mask_backup = gaussians._mask_score.data.clone()
-                    gaussians._mask_score.requires_grad_(False)
-                    gaussians._mask_score.data.fill_(10.0)
-                    render_pkg_abs = render(viewpoint_cam, gaussians, pipe, bg)
-                    if render_pkg_abs["viewspace_points"].grad is not None:
-                        gaussians.add_densification_stats(
-                            render_pkg_abs["viewspace_points"],
-                            torch.ones_like(visibility_filter, dtype=torch.bool),
-                        )
-                    gaussians._mask_score.data = mask_backup
-                    gaussians._mask_score.requires_grad_(True)
+                #if iteration % (opt.densification_interval // 2) == 0:
+                   # mask_backup = gaussians._mask_score.data.clone()
+                    #gaussians._mask_score.requires_grad_(False)
+                   # gaussians._mask_score.data.fill_(10.0)
+                    #render_pkg_abs = render(viewpoint_cam, gaussians, pipe, bg)
+                   # if render_pkg_abs["viewspace_points"].grad is not None:
+                      #  gaussians.add_densification_stats(
+                        #    render_pkg_abs["viewspace_points"],
+                       # #    torch.ones_like(visibility_filter, dtype=torch.bool),
+                       # )
+                   # gaussians._mask_score.data = mask_backup
+                  #  gaussians._mask_score.requires_grad_(True)
 
                 if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0:
                     # [Freeze Mask During Densify]
-                    for p in [gaussians._mask_score]:
-                        p.requires_grad_(False)
+                   # for p in [gaussians._mask_score]:
+                      #  p.requires_grad_(False)
                     size_threshold = 20 if iteration > opt.opacity_reset_interval else None
                     gaussians.densify_and_prune(opt.densify_grad_threshold,0.005,scene.cameras_extent,size_threshold,)
-                    for p in [gaussians._mask_score]:
-                        p.requires_grad_(True)
+                    #for p in [gaussians._mask_score]:
+                      #  p.requires_grad_(True)
 
                 if (iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter)):
                     gaussians.reset_opacity()
-            elif args.prune_dead_points and iteration % opt.densification_interval == 0:
-                gaussians.prune(1/255, scene.cameras_extent, None, dens_statistic_dict)
+            #elif args.prune_dead_points and iteration % opt.densification_interval == 0:
+             #   gaussians.prune(1/255, scene.cameras_extent, None, dens_statistic_dict)
 
             if args.mercy_points and iteration % args.mercy_interval == 0 and iteration >= opt.densify_until_iter: #and iteration <= fine_tune_start:
                 with torch.no_grad():
@@ -220,9 +220,9 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
             # [Mask Timing Adjust]
             #if iteration > opt.densify_until_iter and iteration % opt.mask_prune_iter == 0:
-            if iteration > opt.densify_from_iter and iteration % (2 * opt.mask_prune_iter) == 0:
-                print(f"[ITER {iteration}] Running mask_prune() ...")
-                gaussians.mask_prune()
+           # if iteration > opt.densify_from_iter and iteration % (2 * opt.mask_prune_iter) == 0:
+               # print(f"[ITER {iteration}] Running mask_prune() ...")
+               # gaussians.mask_prune()
 
             # ----------------------------- 优化器步进 -----------------------------
             if iteration < opt.iterations:
@@ -242,7 +242,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     print(f"Total training time (precise): {total_duration:.2f} seconds")
     print(f"=====================================")
     print(f"✅ PEAK GPU MEMORY RESERVED:  {max_gpu_mem:.2f} GB")
-    print(f"✅ PEAK GPU MEMORY ALLOCATED: {max_gpu_alloc:.2f} GB")  # 👈 加这个
+    print(f"✅ PEAK GPU MEMORY ALLOCATED: {max_gpu_alloc:.2f} GB")
     print("=======================================================\n")
 
 # ----------------------------- 其他函数保持原样 -----------------------------
